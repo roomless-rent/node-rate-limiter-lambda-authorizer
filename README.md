@@ -1,2 +1,2 @@
 # node-rate-limiter-lambda-authorizer
-A lambda authorizer implementation using node-rate-limiter-flexible 
+An AWS lambda authorizer implementation using [node-rate-limiter-flexible](https://github.com/animir/node-rate-limiter-flexible).

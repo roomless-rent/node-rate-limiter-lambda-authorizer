@@ -1,0 +1,15 @@
+{
+  "name": "rate-limiter-lambda-authorizer",
+  "version": "1.0.0",
+  "description": "An AWS lambda authorizer implementation using [node-rate-limiter-flexible](https://github.com/animir/node-rate-limiter-flexible).",
+  "main": "authorizer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "serverless": "^3.38.0",
+    "serverless-offline": "^13.3.0"
+  }
+}

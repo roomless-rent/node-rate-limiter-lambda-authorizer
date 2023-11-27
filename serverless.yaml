@@ -1,0 +1,16 @@
+service: lambda-authorizer
+
+plugins:
+  - serverless-offline
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+
+functions:
+  authorizer:
+    handler: authorizer.handler
+    events:
+    - http:
+          method: ANY
+          path: '{proxy+}'

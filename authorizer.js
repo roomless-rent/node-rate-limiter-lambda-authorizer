@@ -55,7 +55,7 @@ module.exports.handler = async function(event, context, callback) {
     let policy = null;
 
     // Use different rate limiter for admins
-    if (token && token.roles?.includes(1)) { //Todo fix this hardcode, 1 is admin
+    if (token && token.roles?.includes('ROLE_ADMIN')) {
         console.log(`Using admin rate limiter for ip: ${request.sourceIp}, email: ${token.email}`);
         try {
             rateLimiterRes = await rateLimiterAdmin.consume(request.sourceIp);
@@ -73,7 +73,7 @@ module.exports.handler = async function(event, context, callback) {
         }
     }
 
-    console.log(`Rate limiter result for ip ${request.sourceIp}(${request.userAgent}): ${rateLimiterRes}`);
+    console.log(`Rate limiter result for ip ${request.sourceIp} (${request.userAgent}): ${rateLimiterRes}`);
     callback(null, policy);
 }
 

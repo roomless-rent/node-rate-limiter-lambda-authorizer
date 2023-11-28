@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.460.0",
+    "jsonwebtoken": "^9.0.2",
     "rate-limiter-flexible": "github:Daniel-97/node-rate-limiter-flexible#feature/dynamo-db-store-implementation"
   }
 }

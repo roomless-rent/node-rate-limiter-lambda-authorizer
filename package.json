@@ -4,12 +4,17 @@
   "description": "An AWS lambda authorizer implementation using [node-rate-limiter-flexible](https://github.com/animir/node-rate-limiter-flexible).",
   "main": "authorizer.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "sls deploy function -f authorizer"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "serverless": "^3.38.0",
     "serverless-offline": "^13.3.0"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.460.0",
+    "rate-limiter-flexible": "github:Daniel-97/node-rate-limiter-flexible#feature/dynamo-db-store-implementation"
   }
 }

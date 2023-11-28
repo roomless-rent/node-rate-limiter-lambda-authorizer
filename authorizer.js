@@ -1,19 +1,36 @@
+const { DynamoDB } = require("@aws-sdk/client-dynamodb");
+const { RateLimiterDynamo } = require("rate-limiter-flexible");
 
-module.exports.handler = function(event, context, callback) {
+module.exports.handler = async function(event, context, callback) {
 
-    const headers = event.headers;
-    const httpMethod = event.httpMethod;
-    const userAgent = headers["User-Agent"];
-    const host = headers["Host"];
-    const path = event.path;
-    
-    console.log(`host ${host}, path: ${path}, user-agent: ${userAgent}`)
-    console.log(event)
+    const dynamoClient = new DynamoDB();
+    const rateLimiter = new RateLimiterDynamo({
+        storeClient: dynamoClient,
+        points: 10,
+        duration: 60,
+        tableName: 'api-rate-limiter-prod',
+        tableCreated: true
+    });
 
-    if (headers['policy'] == 'deny') {
-        callback(null, generatePolicy('Deny', event.methodArn));
-    } else {
-        callback(null, generatePolicy('Allow', event.methodArn));
+    const request = {
+        headers: event.headers,
+        context: event.requestContext,
+        path: event.requestContext.path,
+        sourceIp: event.requestContext.identity.sourceIp,
+        userAgent: event.requestContext.identity.userAgent
+    }
+
+    if (!request.sourceIp) {
+        callback(null, generatePolicy('Deny', event.methodArn, {}));
+    }
+
+    try {
+        const res = await rateLimiter.consume(request.sourceIp);
+        console.log(res);
+        callback(null, generatePolicy('Allow', event.methodArn, res));
+    } catch(e) {
+        console.log(e);
+        callback(null, generatePolicy('Deny', event.methodArn, e));
     }
 }
 

@@ -69,17 +69,17 @@ module.exports.handler = async function(event, context, callback) {
         console.log(`Using admin rate limiter for host: ${host}, email: ${token.sub}`);
         try {
             rateLimiterRes = await rateLimiterAdmin.consume(request.sourceIp);
-            policy = generatePolicy('Allow', event.methodArn);
+            policy = generatePolicy('Allow', event.methodArn, rateLimiterRes);
         } catch(e) {
-            policy = generatePolicy('Deny', event.methodArn);
+            policy = generatePolicy('Deny', event.methodArn, e);
         }
     } else {
         console.log(`Using default rate limiter for host ${host}, email: ${token?.sub || 'N/A'}`);
         try {
             rateLimiterRes =  await rateLimiter.consume(request.sourceIp);
-            policy = generatePolicy('Allow', event.methodArn);
+            policy = generatePolicy('Allow', event.methodArn, rateLimiterRes);
         } catch(e) {
-            policy = generatePolicy('Deny', event.methodArn);
+            policy = generatePolicy('Deny', event.methodArn, e);
         }
     }
 

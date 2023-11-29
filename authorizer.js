@@ -38,6 +38,7 @@ module.exports.handler = async function(event, context, callback) {
         return generatePolicy('Deny', event.methodArn);
     }
 
+    const host = `${request.sourceIp} (${request.userAgent})`;
     let token = null;
 
     // Supertoken, if provided no rate limiter is used
@@ -45,7 +46,7 @@ module.exports.handler = async function(event, context, callback) {
         const bearer = request.headers['x-authorizer-token'];
         try {
             const authorizerToken = jwt.verify(bearer, process.env.AUTHORIZER_JWT_TOKEN);
-            console.log(`Found valid authorizer token (supertoken) from host ${request.sourceIp}. Token: ${JSON.stringify(authorizerToken,null,4)}`);
+            console.log(`Found valid authorizer token (supertoken) from host ${host}. Token: ${JSON.stringify(authorizerToken)}`);
             return generatePolicy('Allow', event.methodArn);
         } catch(_) {}
     }
@@ -54,7 +55,7 @@ module.exports.handler = async function(event, context, callback) {
         const bearer = request.headers['Authorization'].replace('Bearer ', '');
         try {
             token = jwt.verify(bearer, process.env.ROOMLESS_JWT_SECRET);
-            console.log(`Found verified token from host ${request.sourceIp}. Token: ${JSON.stringify(token)}`);
+            console.log(`Found verified token from host ${host}. Token: ${JSON.stringify(token)}`);
         } catch(e) {
             console.error(`Failed to verify token ${e}`);
         }
@@ -65,7 +66,7 @@ module.exports.handler = async function(event, context, callback) {
 
     // Use different rate limiter for admins
     if (token && token.roles?.includes('ROLE_ADMIN')) {
-        console.log(`Using admin rate limiter for host: ${request.sourceIp}, email: ${token.sub}`);
+        console.log(`Using admin rate limiter for host: ${host}, email: ${token.sub}`);
         try {
             rateLimiterRes = await rateLimiterAdmin.consume(request.sourceIp);
             policy = generatePolicy('Allow', event.methodArn);
@@ -73,7 +74,7 @@ module.exports.handler = async function(event, context, callback) {
             policy = generatePolicy('Deny', event.methodArn);
         }
     } else {
-        console.log(`Using default rate limiter for host ${request.sourceIp}, email: ${token?.sub || 'N/A'}`);
+        console.log(`Using default rate limiter for host ${host}, email: ${token?.sub || 'N/A'}`);
         try {
             rateLimiterRes =  await rateLimiter.consume(request.sourceIp);
             policy = generatePolicy('Allow', event.methodArn);
@@ -82,7 +83,7 @@ module.exports.handler = async function(event, context, callback) {
         }
     }
 
-    console.log(`Rate limiter result for host ${request.sourceIp} (${request.userAgent}): ${rateLimiterRes}`);
+    console.log(`Rate limiter result for host ${host}: ${rateLimiterRes}`);
     return policy;
 }
 

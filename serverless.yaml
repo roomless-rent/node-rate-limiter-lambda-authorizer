@@ -18,6 +18,10 @@ provider:
             - 'arn:aws:dynamodb:eu-central-1:090302095195:table/api-rate-limiter-${env:NODE_ENV}'
   environment:
     NODE_ENV: ${env:NODE_ENV}
+    ROOMLESS_JWT_SECRET: ${env:ROOMLESS_JWT_SECRET}
+    AUTHORIZER_JWT_TOKEN: ${env:AUTHORIZER_JWT_SECRET}
+    DEFAULT_RATE_LIMIT: 30
+    ADMIN_RATE_LIMIT: 90
 
 functions:
   authorizer:

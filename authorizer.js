@@ -34,19 +34,28 @@ module.exports.handler = async function(event, context, callback) {
     }
 
     if (!request.sourceIp) {
-        callback(null, generatePolicy('Deny', event.methodArn, {}));
+        console.error('No source ip found, returning deny');
+        return generatePolicy('Deny', event.methodArn);
     }
 
     let token = null;
 
+    // Supertoken, if provided no rate limiter is used
+    if (request.headers['x-authorizer-token']) {
+        const bearer = request.headers['x-authorizer-token'];
+        try {
+            const authorizerToken = jwt.verify(bearer, process.env.AUTHORIZER_JWT_TOKEN);
+            console.log(`Found valid authorizer token (supertoken) from host ${request.sourceIp}. Token: ${JSON.stringify(authorizerToken,null,4)}`);
+            return generatePolicy('Allow', event.methodArn);
+        } catch(_) {}
+    }
+
     if (request.headers['Authorization']) {
         const bearer = request.headers['Authorization'].replace('Bearer ', '');
-        console.log(`Bearer: ${bearer}`);
-        console.log(process.env)
         try {
-            token = jwt.verify(bearer, process.env.JWT_SECRET);
-            console.log(`Verified token: ${JSON.stringify(token)}`);
-        } catch(e){
+            token = jwt.verify(bearer, process.env.ROOMLESS_JWT_SECRET);
+            console.log(`Found verified token from host ${request.sourceIp}. Token: ${JSON.stringify(token)}`);
+        } catch(e) {
             console.error(`Failed to verify token ${e}`);
         }
     }
@@ -56,7 +65,7 @@ module.exports.handler = async function(event, context, callback) {
 
     // Use different rate limiter for admins
     if (token && token.roles?.includes('ROLE_ADMIN')) {
-        console.log(`Using admin rate limiter for ip: ${request.sourceIp}, email: ${token.sub}`);
+        console.log(`Using admin rate limiter for host: ${request.sourceIp}, email: ${token.sub}`);
         try {
             rateLimiterRes = await rateLimiterAdmin.consume(request.sourceIp);
             policy = generatePolicy('Allow', event.methodArn);
@@ -64,7 +73,7 @@ module.exports.handler = async function(event, context, callback) {
             policy = generatePolicy('Deny', event.methodArn);
         }
     } else {
-        console.log(`Using default rate limiter for ip ${request.sourceIp}, email: ${token?.sub || 'N/A'}`);
+        console.log(`Using default rate limiter for host ${request.sourceIp}, email: ${token?.sub || 'N/A'}`);
         try {
             rateLimiterRes =  await rateLimiter.consume(request.sourceIp);
             policy = generatePolicy('Allow', event.methodArn);
@@ -73,8 +82,8 @@ module.exports.handler = async function(event, context, callback) {
         }
     }
 
-    console.log(`Rate limiter result for ip ${request.sourceIp} (${request.userAgent}): ${rateLimiterRes}`);
-    callback(null, policy);
+    console.log(`Rate limiter result for host ${request.sourceIp} (${request.userAgent}): ${rateLimiterRes}`);
+    return policy;
 }
 
 /**
@@ -83,7 +92,7 @@ module.exports.handler = async function(event, context, callback) {
  * @param {string} effect - The effect of the policy (Allow or Deny)
  * @return {Object} The generated policy object.
  */
-function generatePolicy(effect, resource) {
+function generatePolicy(effect, resource, context) {
 
     return {
         principalId: "user",
@@ -96,6 +105,7 @@ function generatePolicy(effect, resource) {
                     Resource: resource
                 }
             ]
-        }
+        },
+        context: context
     }
 }

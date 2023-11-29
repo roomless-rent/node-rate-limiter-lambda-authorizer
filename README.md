@@ -11,3 +11,6 @@ The dynamo table should have the following field:
 - expire: N
 
 DO NOT FORGET TO PUT THE CORRECT ARN NAME IN THE SERVERLESS.YAML
+
+# JWT TOKEN
+Do not forget to set the JWT SECRET token when deploying the lambda authorizer

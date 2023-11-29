@@ -5,7 +5,10 @@
   "main": "authorizer.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "deploy": "sls deploy function -f authorizer"
+    "deploy-function-dev": "NODE_ENV=dev sls deploy function -f authorizer",
+    "deploy-function-prod": "NODE_ENV=prod sls deploy function -f authorizer",
+    "deploy-prod": "NODE_ENV=prod sls deploy",
+    "deploy-dev": "NODE_ENV=dev sls deploy"
   },
   "author": "",
   "license": "ISC",

@@ -7,29 +7,25 @@ provider:
   name: aws
   runtime: nodejs18.x
   region: eu-central-1
-  stage: dev
+  stage: ${env:NODE_ENV}
 
-resources:
-  Resources:
-    api-rate-limiter-prod:
-      Type: AWS::DynamoDB::Table,
-      Properties:
-        TableName: api-rate-limiter
-        AttributeDefinitions:
-          - AttributeName: key
-            AttributeType: S
-        KeySchema:
-          - AttributeName: key
-            KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: 25
-          WriteCapacityUnits: 25
+# resources:
+#   Resources:
+#     api-rate-limiter-prod:
+#       Type: AWS::DynamoDB::Table,
+#       Properties:
+#         TableName: api-rate-limiter
+#         AttributeDefinitions:
+#           - AttributeName: key
+#             AttributeType: S
+#         KeySchema:
+#           - AttributeName: key
+#             KeyType: HASH
+#         ProvisionedThroughput:
+#           ReadCapacityUnits: 25
+#           WriteCapacityUnits: 25
 
 functions:
   authorizer:
     handler: authorizer.handler
-    name: authorizer
-    events:
-    - http:
-          method: ANY
-          path: '{proxy+}'
+    name: authorizer-${env:NODE_ENV}

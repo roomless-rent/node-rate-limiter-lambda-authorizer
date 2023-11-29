@@ -9,7 +9,7 @@ const rateLimiter = new RateLimiterDynamo({
     storeClient: dynamoClient,
     points: Number(process.env.DEFAULT_RATE_LIMIT) | 30,
     duration: RATE_LIMITER_SECONDS,
-    tableName: 'api-rate-limiter-prod',
+    tableName: `api-rate-limiter-${process.env.NODE_ENV}`,
     tableCreated: true,
     keyPrefix: 'not-admin'
 });
@@ -18,7 +18,7 @@ const rateLimiterAdmin = new RateLimiterDynamo({
     storeClient: dynamoClient,
     points: Number(process.env.ADMIN_RATE_LIMIT) | 90,
     duration: RATE_LIMITER_SECONDS,
-    tableName: 'api-rate-limiter-prod',
+    tableName: `api-rate-limiter-${process.env.NODE_ENV}`,
     tableCreated: true,
     keyPrefix: 'admin'
 });

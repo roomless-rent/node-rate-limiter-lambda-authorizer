@@ -39,6 +39,7 @@ module.exports.handler = async function(event, context, callback) {
     }
 
     const host = `${request.sourceIp} (${request.userAgent})`;
+    console.log(`New request from host ${host} on path ${request.path}`);
     let token = null;
 
     // Supertoken, if provided no rate limiter is used
@@ -46,7 +47,7 @@ module.exports.handler = async function(event, context, callback) {
         const bearer = request.headers['x-authorizer-token'];
         try {
             const authorizerToken = jwt.verify(bearer, process.env.AUTHORIZER_JWT_TOKEN);
-            console.log(`Found valid authorizer token (supertoken) from host ${host}. Token: ${JSON.stringify(authorizerToken)}`);
+            console.log(`Found valid SUPERTOKEN from host ${host}. Token: ${JSON.stringify(authorizerToken)}`);
             return generatePolicy('Allow', event.methodArn);
         } catch(_) {}
     }

@@ -21,3 +21,4 @@ Do not forget to set the JWT SECRET token when deploying the lambda authorizer
 - AUTHORIZER_JWT_SECRET -> Secret per verificare i supertoken (se valido limiter viene skippato)
 - DEFAULT_RATE_LIMIT -> Chiamate al minuto massime per NON admin (loggati e non loggati)
 - ADMIN_RATE_LIMIT -> Chiamate al minuto massi per utenti admin
+- DISABLE_AUTHORIZER -> Se true authorizer ritorna sempre politica Allow (consente tutto, killswitch)

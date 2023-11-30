@@ -33,14 +33,21 @@ module.exports.handler = async function(event, context, callback) {
         userAgent: event.requestContext.identity.userAgent,
     }
 
+    if (process.env.DISABLE_AUTHORIZER === 'true') {
+        console.log('Authorizer is disabled(kill-switch enabled), returning allow');
+        return generatePolicy('Allow', event.methodArn);
+    }
+
     if (!request.sourceIp) {
         console.error('No source ip found, returning deny');
         return generatePolicy('Deny', event.methodArn);
     }
-
+    
     const host = `${request.sourceIp} (${request.userAgent})`;
     console.log(`New request from host ${host} on path ${request.path}`);
     let token = null;
+
+    console.log(request.headers)
 
     // Supertoken, if provided no rate limiter is used
     if (request.headers['x-authorizer-token']) {

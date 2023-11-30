@@ -84,6 +84,7 @@ module.exports.handler = async function(event, context, callback) {
             rateLimiterRes = await rateLimiterAdmin.consume(hostIP);
             policy = 'Allow';
         } catch(e) {
+            //TODO potrebbe verificarsi un errore di comunicazione con dynamo, cosi si nega sempre
             policy = 'Deny';
             rateLimiterRes = e;
         }
@@ -93,6 +94,7 @@ module.exports.handler = async function(event, context, callback) {
             rateLimiterRes =  await rateLimiter.consume(hostIP);
             policy = 'Allow';
         } catch(e) {
+            //TODO potrebbe verificarsi un errore di comunicazione con dynamo, cosi si nega sempre
             policy = 'Deny';
             rateLimiterRes = e;
         }

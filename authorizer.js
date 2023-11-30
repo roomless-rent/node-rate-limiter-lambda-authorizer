@@ -46,7 +46,7 @@ module.exports.handler = async function(event, context, callback) {
     if (request.headers['x-authorizer-token']) {
         const bearer = request.headers['x-authorizer-token'];
         try {
-            const authorizerToken = jwt.verify(bearer, process.env.AUTHORIZER_JWT_TOKEN);
+            const authorizerToken = jwt.verify(bearer, process.env.AUTHORIZER_JWT_SECRET);
             console.log(`Found valid SUPERTOKEN from host ${host}. Token: ${JSON.stringify(authorizerToken)}`);
             return generatePolicy('Allow', event.methodArn);
         } catch(_) {}

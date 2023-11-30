@@ -14,3 +14,10 @@ DO NOT FORGET TO PUT THE CORRECT ARN NAME IN THE SERVERLESS.YAML
 
 # JWT TOKEN
 Do not forget to set the JWT SECRET token when deploying the lambda authorizer
+
+# Environment
+- NODE_ENV -> Specifica l'ambiente DEV o PROD
+- ROOMLESS_JWT_SECRET -> Secret per verificare i token degli utenti roomless
+- AUTHORIZER_JWT_SECRET -> Secret per verificare i supertoken (se valido limiter viene skippato)
+- DEFAULT_RATE_LIMIT -> Chiamate al minuto massime per NON admin (loggati e non loggati)
+- ADMIN_RATE_LIMIT -> Chiamate al minuto massi per utenti admin

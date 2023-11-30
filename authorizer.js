@@ -31,23 +31,28 @@ module.exports.handler = async function(event, context, callback) {
         path: event.requestContext.path,
         sourceIp: event.requestContext.identity.sourceIp,
         userAgent: event.requestContext.identity.userAgent,
+        vercelRealIp: event.headers['x-vercel-real-ip']
     }
 
     if (process.env.DISABLE_AUTHORIZER === 'true') {
-        console.log('Authorizer is disabled(kill-switch enabled), returning allow');
+        console.log('Authorizer is disabled (kill-switch enabled), returning allow');
         return generatePolicy('Allow', event.methodArn);
     }
 
-    if (!request.sourceIp) {
+    let hostIP = request.sourceIp;
+    if (request.vercelRealIp) {
+        console.log(`Received vercel SSR request from server ${request.sourceIp} with real ip ${request.vercelRealIp} (using real IP)`);
+        hostIP = request.vercelRealIp;
+    }
+
+    if (!hostIP) {
         console.error('No source ip found, returning deny');
         return generatePolicy('Deny', event.methodArn);
     }
     
-    const host = `${request.sourceIp} (${request.userAgent})`;
+    const host = `${hostIP} (${request.userAgent})`;
     console.log(`New request from host ${host} on path ${request.path}`);
     let token = null;
-
-    console.log(request.headers)
 
     // Supertoken, if provided no rate limiter is used
     if (request.headers['x-authorizer-token']) {
@@ -76,7 +81,7 @@ module.exports.handler = async function(event, context, callback) {
     if (token && token.roles?.includes('ROLE_ADMIN')) {
         console.log(`Using admin rate limiter for host: ${host}, email: ${token.sub}`);
         try {
-            rateLimiterRes = await rateLimiterAdmin.consume(request.sourceIp);
+            rateLimiterRes = await rateLimiterAdmin.consume(hostIP);
             policy = 'Allow';
         } catch(e) {
             policy = 'Deny';
@@ -85,7 +90,7 @@ module.exports.handler = async function(event, context, callback) {
     } else {
         console.log(`Using default rate limiter for host ${host}, email: ${token?.sub || 'N/A'}`);
         try {
-            rateLimiterRes =  await rateLimiter.consume(request.sourceIp);
+            rateLimiterRes =  await rateLimiter.consume(hostIP);
             policy = 'Allow';
         } catch(e) {
             policy = 'Deny';
@@ -99,7 +104,7 @@ module.exports.handler = async function(event, context, callback) {
         limiterMsBeforeNext: rateLimiterRes.msBeforeNext,
         limiterConsumedPoints: rateLimiterRes.consumedPoints,
         limiterIsFirstInDuration: rateLimiterRes.isFirstInDuration,
-        hostIp: request.sourceIp,
+        hostIp: hostIP,
         hostUserAgent: request.userAgent,
         hostPath: request.path,
         // Error message must be contain quote

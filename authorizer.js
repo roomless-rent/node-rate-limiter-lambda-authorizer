@@ -7,7 +7,7 @@ const dynamoClient = new DynamoDB();
 
 const rateLimiter = new RateLimiterDynamo({
     storeClient: dynamoClient,
-    points: Number(process.env.DEFAULT_RATE_LIMIT) | 30,
+    points: Number(process.env.DEFAULT_RATE_LIMIT),
     duration: RATE_LIMITER_SECONDS,
     tableName: `api-rate-limiter-${process.env.NODE_ENV}`,
     tableCreated: true,
@@ -16,7 +16,7 @@ const rateLimiter = new RateLimiterDynamo({
 
 const rateLimiterAdmin = new RateLimiterDynamo({
     storeClient: dynamoClient,
-    points: Number(process.env.ADMIN_RATE_LIMIT) | 90,
+    points: Number(process.env.ADMIN_RATE_LIMIT),
     duration: RATE_LIMITER_SECONDS,
     tableName: `api-rate-limiter-${process.env.NODE_ENV}`,
     tableCreated: true,
@@ -70,22 +70,34 @@ module.exports.handler = async function(event, context, callback) {
         console.log(`Using admin rate limiter for host: ${host}, email: ${token.sub}`);
         try {
             rateLimiterRes = await rateLimiterAdmin.consume(request.sourceIp);
-            policy = generatePolicy('Allow', event.methodArn, rateLimiterRes);
+            policy = 'Allow';
         } catch(e) {
-            policy = generatePolicy('Deny', event.methodArn, e);
+            policy = 'Deny';
+            rateLimiterRes = e;
         }
     } else {
         console.log(`Using default rate limiter for host ${host}, email: ${token?.sub || 'N/A'}`);
         try {
             rateLimiterRes =  await rateLimiter.consume(request.sourceIp);
-            policy = generatePolicy('Allow', event.methodArn, rateLimiterRes);
+            policy = 'Allow';
         } catch(e) {
-            policy = generatePolicy('Deny', event.methodArn, e);
+            policy = 'Deny';
+            rateLimiterRes = e;
         }
     }
 
-    console.log(`Rate limiter result for host ${host}: ${rateLimiterRes}`);
-    return policy;
+    console.log(`Returning policy ${policy} for host ${host}. Rate limiter result: ${JSON.stringify(rateLimiterRes)}`);
+    return generatePolicy(policy, event.methodArn, {
+        limiterRemainingPoints: rateLimiterRes.remainingPoints,
+        limiterMsBeforeNext: rateLimiterRes.msBeforeNext,
+        limiterConsumedPoints: rateLimiterRes.consumedPoints,
+        limiterIsFirstInDuration: rateLimiterRes.isFirstInDuration,
+        hostIp: request.sourceIp,
+        hostUserAgent: request.userAgent,
+        hostPath: request.path,
+        // Error message must be contain quote
+        errorMessage: policy === 'Deny' ? "\"Rate limit exceeded, please try again later\"" : undefined
+    });
 }
 
 /**
@@ -94,7 +106,7 @@ module.exports.handler = async function(event, context, callback) {
  * @param {string} effect - The effect of the policy (Allow or Deny)
  * @return {Object} The generated policy object.
  */
-function generatePolicy(effect, resource, context) {
+function generatePolicy(effect, resource, context = undefined) {
 
     return {
         principalId: "user",

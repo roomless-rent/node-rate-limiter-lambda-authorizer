@@ -2,8 +2,11 @@
 An AWS lambda authorizer implementation using [node-rate-limiter-flexible](https://github.com/animir/node-rate-limiter-flexible).
 
 ## Deploy instruction
-NODE_ENV=<env> sls deploy
-NODE_ENV=<env> sls deploy function -f authorizer
+You MUST provide all the necessary env variables for deploy
+### Deploy all stack
+AUTHORIZER_JWT_SECRET=<secret1> ROOMLESS_JWT_SECRET=<secret2> NODE_ENV=<env> npx serverless deploy
+### Deploy only function
+AUTHORIZER_JWT_SECRET=<secret1> ROOMLESS_JWT_SECRET=<secret2> NODE_ENV=<env> npx serverless deploy function -f authorizer
 
 # Dynamo table definition 
 The dynamo table should have the following field:

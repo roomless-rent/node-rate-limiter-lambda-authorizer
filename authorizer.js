@@ -84,9 +84,13 @@ module.exports.handler = async function(event, context, callback) {
             rateLimiterRes = await rateLimiterAdmin.consume(hostIP);
             policy = 'Allow';
         } catch(e) {
-            //TODO potrebbe verificarsi un errore di comunicazione con dynamo, cosi si nega sempre
-            policy = 'Deny';
-            rateLimiterRes = e;
+            if (e.remainingPoints != null && e.remainingPoints <= 0) {
+                policy = 'Deny';
+                rateLimiterRes = e;
+            } else {
+                console.error(`Unexpected error when consuming rate limiter admin (returning allow) ${JSON.stringify(e)}`);
+                return generatePolicy('Allow', event.methodArn);
+            }
         }
     } else {
         console.log(`Using default rate limiter for host ${host}, email: ${token?.sub || 'N/A'}`);
@@ -94,9 +98,13 @@ module.exports.handler = async function(event, context, callback) {
             rateLimiterRes =  await rateLimiter.consume(hostIP);
             policy = 'Allow';
         } catch(e) {
-            //TODO potrebbe verificarsi un errore di comunicazione con dynamo, cosi si nega sempre
-            policy = 'Deny';
-            rateLimiterRes = e;
+            if (e.remainingPoints != null && e.remainingPoints <= 0) {
+                policy = 'Deny';
+                rateLimiterRes = e;
+            } else {
+                console.error(`Unexpected error when consuming rate limiter non-admin (returning allow) ${JSON.stringify(e)}`);
+                return generatePolicy('Allow', event.methodArn);
+            }
         }
     }
 

@@ -66,9 +66,10 @@ module.exports.handler = async function(event, context, callback) {
     }
     
     let token = null;
-    if (request.headers['Authorization']) {
-        console.debug(`(${hostIP}) Found a token in Authorization: ${request.headers['Authorization']}`);
-        const bearer = request.headers['Authorization'].replace('Bearer ', '');
+    const authorization = request.headers['authorization'] || request.headers['Authorization'];
+    if (authorization) {
+        console.debug(`(${hostIP}) Found a token in Authorization: ${authorization}`);
+        const bearer = authorization.replace('Bearer ', '').trim();
         try {
             token = jwt.verify(bearer, process.env.ROOMLESS_JWT_SECRET);
             console.debug(`(${hostIP}) Found a valid Bearer token with the following information: ${JSON.stringify(token)}`);

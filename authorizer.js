@@ -31,13 +31,15 @@ module.exports.handler = async function(event, context, callback) {
         path: event.requestContext.path,
         sourceIp: event.requestContext.identity.sourceIp,
         userAgent: event.requestContext.identity.userAgent,
-        vercelRealIp: event.headers['x-vercel-real-ip']
+        vercelRealIp: event.headers['x-vercel-real-ip'] // Avvocato, questo ce lo puo' mettere chiunque
     }
 
     if (process.env.DISABLE_AUTHORIZER === 'true') {
-        console.log('Authorizer is disabled (kill-switch enabled), returning allow');
+        console.warn('Authorizer is disabled (kill-switch enabled), returning allow');
         return generatePolicy('Allow', event.methodArn);
     }
+
+    console.debug(JSON.stringify(request));
 
     let hostIP = request.sourceIp;
     if (request.vercelRealIp) {
@@ -52,8 +54,7 @@ module.exports.handler = async function(event, context, callback) {
     
     const host = `${hostIP} (${request.userAgent})`;
     console.log(`New request from host ${host} on path ${request.path}`);
-    let token = null;
-
+    
     // Supertoken, if provided no rate limiter is used
     if (request.headers['x-authorizer-token']) {
         const bearer = request.headers['x-authorizer-token'];
@@ -63,14 +64,16 @@ module.exports.handler = async function(event, context, callback) {
             return generatePolicy('Allow', event.methodArn);
         } catch(_) {}
     }
-
+    
+    let token = null;
     if (request.headers['Authorization']) {
+        console.debug(`(${hostIP}) Found a token in Authorization: ${request.headers['Authorization']}`);
         const bearer = request.headers['Authorization'].replace('Bearer ', '');
         try {
             token = jwt.verify(bearer, process.env.ROOMLESS_JWT_SECRET);
-            console.log(`Found verified token from host ${host}. Token: ${JSON.stringify(token)}`);
+            console.debug(`(${hostIP}) Found a valid Bearer token with the following information: ${JSON.stringify(token)}`);
         } catch(e) {
-            console.error(`Failed to verify token ${e}`);
+            console.error(`(${hostIP}) An error occurred while verifying token (${bearer}) (${token}): ${e}`);
         }
     }
 

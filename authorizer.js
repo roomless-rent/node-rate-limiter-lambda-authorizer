@@ -24,7 +24,13 @@ const rateLimiterAdmin = new RateLimiterDynamo({
 });
 
 module.exports.handler = async function(event, context, callback) {
+	// Controllo kill-switch
+	if (process.env.DISABLE_AUTHORIZER === "true") {
+		console.warn("Kill-switch is enabled, so the authorizer: returning allow");
+    	return generatePolicy("Allow", event.methodArn);
+	}
 
+	// Richiesta in ingresso
 	const request = {
 		headers: event.headers,
 		context: event.requestContext,
@@ -32,11 +38,6 @@ module.exports.handler = async function(event, context, callback) {
 		sourceIp: event.requestContext.identity.sourceIp,
 		userAgent: event.requestContext.identity.userAgent,
 		vercelRealIp: event.headers['x-vercel-real-ip'] // Avvocato, questo ce lo puo' mettere chiunque
-	}
-
-	if (process.env.DISABLE_AUTHORIZER === 'true') {
-		console.warn('Authorizer is disabled (kill-switch enabled), returning allow');
-		return generatePolicy('Allow', event.methodArn);
 	}
 
 	console.debug(JSON.stringify(request));

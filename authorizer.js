@@ -49,16 +49,14 @@ module.exports.handler = async function(event, context, callback) {
 		vercelRealIp: event.headers['x-vercel-real-ip'] // Avvocato, questo ce lo puo' mettere chiunque
 	}
 
-	console.debug(JSON.stringify(request));
-
-	let hostIP = request.sourceIp;
+	// Indirizzo IP dell'utente (ottenuto tramite Vercel oppure dalla sorgente)
+	const hostIP = request.vercelRealIp || request.sourceIp;
 	if (request.vercelRealIp) {
-		console.log(`Received vercel SSR request from server ${request.sourceIp} with real ip ${request.vercelRealIp} (using real IP)`);
-		hostIP = request.vercelRealIp;
+		console.debug(`IP address obtained from Vercel: ${request.vercelRealIp}`);
 	}
 
 	if (!hostIP) {
-		console.error('No source ip found, returning deny');
+		console.error('IP Address not found, returning deny');
 		return generatePolicy('Deny', event.methodArn);
 	}
 

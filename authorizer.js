@@ -30,6 +30,15 @@ module.exports.handler = async function(event, context, callback) {
     	return generatePolicy("Allow", event.methodArn);
 	}
 
+	// Controllo la presenza di un Super token
+	if (event.headers['x-authorizer-token']) {
+		try {
+			jwt.verify(event.headers['x-authorizer-token'], process.env.AUTHORIZER_JWT_SECRET);
+			console.log(`There is a valid Super token in the request`);
+			return generatePolicy('Allow', event.methodArn);
+		} catch(_) {}
+	}
+
 	// Richiesta in ingresso
 	const request = {
 		headers: event.headers,
@@ -56,16 +65,7 @@ module.exports.handler = async function(event, context, callback) {
 	const host = `${hostIP} (${request.userAgent})`;
 	console.log(`New request from host ${host} on path ${request.path}`);
 
-	// Supertoken, if provided no rate limiter is used
-	if (request.headers['x-authorizer-token']) {
-		const bearer = request.headers['x-authorizer-token'];
-		try {
-			const authorizerToken = jwt.verify(bearer, process.env.AUTHORIZER_JWT_SECRET);
-			console.log(`Found valid SUPERTOKEN from host ${host}. Token: ${JSON.stringify(authorizerToken)}`);
-			return generatePolicy('Allow', event.methodArn);
-		} catch(_) {}
-	}
-
+	
 	let token = null;
 	const authorization = request.headers['authorization'] || request.headers['Authorization'];
 	if (authorization) {

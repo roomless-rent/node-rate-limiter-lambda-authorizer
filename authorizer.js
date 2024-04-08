@@ -77,50 +77,36 @@ module.exports.handler = async function(event, context, callback) {
 		}
 	}
 
-	let rateLimiterRes = null;
 	let policy = null;
+	let rateLimiterRes = null;
+	const isAdmin = token && token.roles?.includes('ROLE_ADMIN');
 
-	// Use different rate limiter for admins
-	if (token && token.roles?.includes('ROLE_ADMIN')) {
-		console.log(`Using admin rate limiter for host: ${host}, email: ${token.sub}`);
-		try {
-			rateLimiterRes = await rateLimiterAdmin.consume(hostIP);
-			policy = 'Allow';
-		} catch(e) {
-			if (e.remainingPoints != null && e.remainingPoints <= 0) {
-				policy = 'Deny';
-				rateLimiterRes = e;
-			} else {
-				console.error(`Unexpected error when consuming rate limiter admin (returning allow) ${JSON.stringify(e)}`);
-				return generatePolicy('Allow', event.methodArn);
-			}
-		}
-	} else {
-		console.log(`Using default rate limiter for host ${host}, email: ${token?.sub || 'N/A'}`);
-		try {
-			rateLimiterRes =  await rateLimiter.consume(hostIP);
-			policy = 'Allow';
-		} catch(e) {
-			if (e.remainingPoints != null && e.remainingPoints <= 0) {
-				policy = 'Deny';
-				rateLimiterRes = e;
-			} else {
-				console.error(`Unexpected error when consuming rate limiter non-admin (returning allow) ${JSON.stringify(e)}`);
-				return generatePolicy('Allow', event.methodArn);
-			}
+	console.log(`Using ${isAdmin ? 'admin' : 'default'} rate limiter for host: ${host}, email: ${token?.sub || 'N/A'}`);
+	try {
+		policy = 'Allow';
+		rateLimiterRes = await (isAdmin ? rateLimiterAdmin : rateLimiter).consume(hostIP);
+	} catch(e) {
+		if (e.remainingPoints != null && e.remainingPoints <= 0) {
+			policy = 'Deny';
+			rateLimiterRes = e;
+		} else {
+			console.error(`Unexpected error when consuming rate limiter admin (returning allow) ${JSON.stringify(e)}`);
+			return generatePolicy('Allow', event.methodArn);
 		}
 	}
 
 	console.log(`Returning policy ${policy} for host ${host}. Rate limiter result: ${JSON.stringify(rateLimiterRes)}`);
 	return generatePolicy(policy, event.methodArn, {
-		limiterRemainingPoints: rateLimiterRes.remainingPoints,
+		hostIp: hostIP,
+		hostPath: request.path,
+		hostUserAgent: request.userAgent,
+		
 		limiterMsBeforeNext: rateLimiterRes.msBeforeNext,
 		limiterConsumedPoints: rateLimiterRes.consumedPoints,
+		limiterRemainingPoints: rateLimiterRes.remainingPoints,
 		limiterIsFirstInDuration: rateLimiterRes.isFirstInDuration,
-		hostIp: hostIP,
-		hostUserAgent: request.userAgent,
-		hostPath: request.path,
-		// Error message must be contain quote
+		
+		// ? Il messaggio di errore deve essere contenuto in una stringa
 		errorMessage: policy === 'Deny' ? "\"Rate limit exceeded, please try again later\"" : undefined
 	});
 }
@@ -132,7 +118,6 @@ module.exports.handler = async function(event, context, callback) {
  * @return {Object} The generated policy object.
  */
 function generatePolicy(effect, resource, context = undefined) {
-
 	return {
 		principalId: "user",
 		policyDocument: {

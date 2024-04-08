@@ -25,3 +25,11 @@ Do not forget to set the JWT SECRET token when deploying the lambda authorizer
 - DEFAULT_RATE_LIMIT -> Chiamate al minuto massime per NON admin (loggati e non loggati)
 - ADMIN_RATE_LIMIT -> Chiamate al minuto massi per utenti admin
 - DISABLE_AUTHORIZER -> Se true authorizer ritorna sempre politica Allow (consente tutto, killswitch)
+
+### Todo
+- [ ] Creare una fingerprint dell'host con il suo indirizzo IP, user agent e, se presente, token;
+- [ ] Loggare meno e meglio;
+- [ ] Whitelist e blacklist di indirizzi IP nell'env (cosi da poterli modificare a run-time);
+- [ ] Burst-rate;
+- [ ] Limite adattivo in base al numero di blocchi consecutivi in una finestra di tempo;
+- [ ] ??

@@ -63,20 +63,6 @@ module.exports.handler = async function (event, context, callback) {
     return generatePolicy("Deny", event.methodArn);
   }
 
-  // blocco gli host provenienti da ec2 non nostri
-  if (hostIP.includes("ec2")) {
-    policy = "Deny";
-
-    return generatePolicy(policy, event.methodArn, {
-      hostIp: hostIP,
-      hostPath: request.path,
-      hostUserAgent: request.userAgent,
-
-      // ? Il messaggio di errore deve essere contenuto in una stringa
-      errorMessage: policy === "Deny" ? '"Blocking ec2 hosts"' : undefined,
-    });
-  }
-
   const host = `${hostIP} (${request.userAgent})`;
   console.log(`New request from host ${host} on path ${request.path}`);
 
